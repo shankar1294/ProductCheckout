@@ -1,4 +1,4 @@
-package com.example.productentry.model;
+package com.example.productcheckout.model;
 
 
 import javax.persistence.Entity;
@@ -7,20 +7,22 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
 @Entity
-public class Products {
+public class Cart {
 
 	@Id
 	@GeneratedValue(strategy=GenerationType.AUTO)
-	private Integer id;
+	private Integer id;	
 
-	private String productname;
+	private Integer userid;
+	
+	private String email;
+	
+	private int productid;
 
-	private int stock;
+	private int quantity;
 
 	private double price;
-
-	private String offer;
-
+	
 	public Integer getId() {
 		return id;
 	}
@@ -29,20 +31,28 @@ public class Products {
 		this.id = id;
 	}
 
-	public String getProductname() {
-		return productname;
+	public Integer getUserid() {
+		return userid;
 	}
 
-	public void setProductname(String productname) {
-		this.productname = productname;
+	public void setUserid(Integer userid) {
+		this.userid = userid;
 	}
 
-	public int getStock() {
-		return stock;
+	public String getEmail() {
+		return email;
 	}
 
-	public void setStock(int stock) {
-		this.stock = stock;
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public int getQuantity() {
+		return quantity;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
 	}
 
 	public double getPrice() {
@@ -52,13 +62,13 @@ public class Products {
 	public void setPrice(double price) {
 		this.price = price;
 	}
-
-	public String getOffer() {
-		return offer;
+	
+	public int getProductid() {
+		return productid;
 	}
 
-	public void setOffer(String offer) {
-		this.offer = offer;
+	public void setProductid(int productid) {
+		this.productid = productid;
 	}
 
 }

@@ -1,6 +1,6 @@
-package com.example.productentry.controller;
+package com.example.productcheckout.controller;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,56 +11,76 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
-import com.example.productentry.model.Products;
-import com.example.productentry.repository.ProductRepository;
+import com.example.productcheckout.model.Cart;
+import com.example.productcheckout.model.Products;
+import com.example.productcheckout.repository.ProductCheckoutRepository;
 
 @RestController
-public class ProductEntryController {
+public class ProductCheckoutController {
 	
 	@Autowired
-	ProductRepository productRepository;
+	ProductCheckoutRepository productCheckoutRepository;
 	
-	@PostMapping(value = "/product" , consumes = MediaType.APPLICATION_JSON_VALUE)
-	public Products createProduct(@RequestBody Map<String, String> req ) throws Exception{
-		
-		Products product = new Products();
-		if(req.get("productname") == null || req.get("stock") == null || req.get("offer") == null || req.get("price") == null){
+	@Autowired
+	RestTemplate restTemplate;
+	
+	@PostMapping(value = "/product/checkout" , consumes = MediaType.APPLICATION_JSON_VALUE)
+	public Map<String, String> createCart(@RequestBody Map<String, String> req) throws Exception{
+
+		System.out.println("inside cart");
+		Map<String, String> response = new HashMap<String, String>();
+		Cart cart = new Cart();
+		if(req.get("productid") == null || req.get("quantity") == null || req.get("userid") == null || req.get("email") == null){
 			throw new Exception("input value cannot be null");
-		} else if(req.get("productname") == "" || req.get("stock") == "" || req.get("offer") == "" || req.get("price") == "") {
+		} else if(req.get("productid") == "" || req.get("quantity") == "" || req.get("userid") == "" || req.get("email") == "") {
 			throw new Exception("input value cannot be empty");
 		}
-		
-		product.setProductname(req.get("productname"));
-		product.setStock(Integer.parseInt(req.get("stock")));
-		product.setPrice(Double.parseDouble(req.get("price")));
-		product.setOffer(req.get("offer"));
-	
-		return productRepository.save(product);
+		int productId = Integer.parseInt(req.get("productid"));
+		System.out.println("before template prdid"+ productId);
+		Products product = restTemplate.getForObject("http://product-entry/product/" + productId, Products.class);
+		System.out.println("after template");
+		int orderQuantity = Integer.parseInt(req.get("quantity"));
+		if(product != null) {
+			if(orderQuantity <= product.getStock()) {
+				System.out.println("inside produt not null");
+				double offerAmount = (product.getOffer() * product.getPrice() / 100 ) ;
+				double amount = product.getPrice() - offerAmount;
+				double totalAmount = orderQuantity * amount;
+				response.put("price", String.valueOf(totalAmount));
+				response.put("message", "product added to cart");
+
+				// add to cart
+				cart.setEmail(req.get("email"));
+				cart.setPrice(totalAmount);
+				cart.setProductid(productId);
+				cart.setQuantity(orderQuantity);
+				cart.setUserid(Integer.parseInt(req.get("userid")));
+				productCheckoutRepository.save(cart);
+				System.out.println("saved in cart");
+			} else {
+				response.put("message", "out of stock");
+			}
+		} else {
+			response.put("message", "out of stock");
+		}
+		return response;
 	}
 	
-	
-	@PostMapping("/product/{id}")
-    public Products update(@PathVariable String id, @RequestBody Map<String, String> body){
-        int productId = Integer.parseInt(id);
-        
-        Products product = null;
-        Optional<Products> products = productRepository.findById(productId);
-        if(products.isPresent()) {
-        	product  = products.get();
-        	product.setProductname(body.get("productname"));
-    		product.setStock(Integer.parseInt(body.get("stock")));
-    		product.setPrice(Double.parseDouble(body.get("price")));
-    		product.setOffer(body.get("offer"));        
-        }
-        return productRepository.save(product);
-    }
-	
-	@GetMapping("/all-products")
-	public List<Products> getAllProduct() throws Exception{
-		
-		return productRepository.findAll();
-		
+	@GetMapping("/product/checkout/{id}")
+	public Cart getById(@PathVariable String id) {
+		Optional<Cart> cart = productCheckoutRepository.findById(Integer.parseInt(id));
+		if(cart.isPresent()) {
+			return cart.get();
+		}
+		return null;
 	}
+	
+//	@GetMapping("/removeCart/{id}")
+//	public String removeCart(@PathVariable int id) throws Exception {		
+//		 productCheckoutRepository.deleteByUserId(id);	
+//		 return "success";
+//	}
 
 }
